@@ -1,0 +1,67 @@
+- name: Starting vulnerability scan for "{{ ansible_facts.hostname }}"
+  block:
+    - name: Getting scan information
+      become: true
+      become_user: user
+      ansible.builtin.uri:
+        url: "https://yoursecuritycenter.com/rest/scan?fields=name"
+        method: GET
+        validate_certs: false
+        headers:
+          x-apikey: "accesskey={{ vault_access_key }}; secretkey={{ vault_secret_key }}"
+        return_content: true
+        dest: /home/user/ansible_nessus/output.txt
+
+    - name: Grabbing ID number
+      block:
+        - name: Changing output perms
+          become: true
+          become_user: user
+          ansible.builtin.shell:
+            cmd: | 
+              chmod 777 /home/user/ansible_nessus/output.txt
+        - name: Beautifying output to id.txt
+          become: true
+          become_user: user
+          ansible.builtin.shell:
+            cmd: |
+              cat /home/user/ansible_nessus/output.txt | jq > /home/user/ansible_nessus/id.txt
+
+        - name: Grabbing ID for API request
+          become: true
+          become_user: user
+          ansible.builtin.shell:
+            cmd: | 
+              chmod 777 /home/user/ansible_nessus/id.txt
+              
+        - name: Grabbing ID number
+          become: true
+          become_user: user
+          ansible.builtin.shell:
+            cmd: |
+              cat /home/user/ansible_nessus/id.txt | grep '"Test Ansible Scan for {{ ansible_facts.hostname }}",' -A 1 | awk '"id" {print $2}' | cut -d '"' -f2 | awk -F: 'NR==2 {print $1}' > /home/user/ansible_nessus/finalid.txt
+        - name: Grabbing ID number
+          become: true
+          become_user: user
+          ansible.builtin.shell:
+            cmd: |
+              chmod 777 /home/user/ansible_nessus/finalid.txt
+
+    - name: Placing ID number in request
+      ansible.builtin.shell:
+        cmd: cat /home/user/ansible_nessus/finalid.txt
+      register: scan_id
+
+    - set_fact:
+        scan_id: "{{ scan_id.stdout }}"
+
+    - debug: var=scan_id
+      run_once: true
+
+    - name: Starting scan of "{{ ansible_facts.hostname }}"
+      ansible.builtin.uri:
+        url: https://yoursecuritycenter.com/rest/scan/{{ scan_id }}/launch
+        method: POST
+        validate_certs: false
+        headers:
+          x-apikey: "accesskey={{ vault_access_key }}; secretkey={{ vault_secret_key }}"
