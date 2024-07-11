@@ -1,0 +1,29 @@
+---
+- name: Creating scan in Tenable SC for "{{ ansible_facts.hostname }}"
+  ansible.builtin.uri:
+    method: "POST"
+    validate_certs: false
+    url: https://yoursecuritycenter.com/rest/scan
+    body:
+      name: "Test Ansible Scan for {{ ansible_facts.hostname }}"
+      type: "policy"
+      policy: {"id":"1000034", "name":APIVuln"}
+      description: "Test of scan creation through Ansible and Tenable SC APIs"
+      repository: {"id":"1"}
+      dhcpTracking: false
+      classifyMitigatedAge: "0"
+      schedule: {"type":"template"}
+      reports: [{"id":"23", "reportSource":"individual"}]
+      assets: []
+      credentials: [{"id":"3"}]
+      emailOnLaunch: false
+      emailOnFinish: false
+      timeoutAction: "import"
+      scanningVirtualhosts: false
+      rolloverType: "template"
+      ipList: "{{ ansible_facts.hostname }}"
+      maxScanTime: "7200"
+      inactivityTimeout: "7200"
+    headers:
+      x-apikey: "accesskey={{ vault_access_key }}; secretkey={{ vault_secret_key }}"
+    body_format: json
