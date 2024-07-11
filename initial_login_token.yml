@@ -1,0 +1,11 @@
+- name: Login to Tenable through API
+  ansible.builtin.uri:
+    url: "https://yoursecuritycenter.com/rest/token"
+    method: POST
+    body:
+      username: "{{ nessus_username }}"
+      password: "{{ nessus_password }}"
+    force_basic_auth: true
+    validate_certs: false 
+    follow_redirects: true
+    body_format: json
